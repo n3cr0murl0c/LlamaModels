@@ -1,3 +1,4 @@
+#based on https://github.com/valiantlynx/ollama-docker/blob/main/Dockerfile
 FROM python:3.11-slim
 
 WORKDIR /code 
