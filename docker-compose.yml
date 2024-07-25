@@ -3,9 +3,10 @@
 services:
   app:
     build: .
-    ports:
-      - 8000:8000
-      - 5678:5678
+    #Uncomment to enable public server on 7869 port, or use it under a local proxy like NPM
+    # ports:
+    #   - 8000:8000
+    #   - 5678:5678
     volumes:
       - .:/code
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
@@ -15,17 +16,18 @@ services:
       - ollama-webui
     networks:
       ollama-docker:
-      proxy:
-        ipv4_address: 192.168.1.11
+      # proxy:
+      #   ipv4_address: 192.168.1.11
 
   ollama:
     image: ollama/ollama:latest
-    ports:
-      - 7869:11434
+    container_name: ollama-server
+    #Uncomment to enable public server on 7869 port, or use it under a local proxy like NPM
+    # ports:
+    #   - 7869:11434
     volumes:
       - .:/code
       - ./ollama/ollama:/root/.ollama
-    container_name: ollama-server
     pull_policy: always
     tty: true
     restart: always
@@ -34,6 +36,7 @@ services:
       - OLLAMA_HOST=0.0.0.0
     networks:
       ollama-docker:
+        ipv4_address: 172.18.0.2
 
   ollama-webui:
     image: ghcr.io/open-webui/open-webui:main
@@ -45,7 +48,7 @@ services:
     ports:
       - 8080:8080
     environment: # https://docs.openwebui.com/getting-started/env-configuration#default_models
-      - OLLAMA_BASE_URLS=http://host.docker.internal:7869,ollama-server:11434 #comma separated ollama hosts
+      - OLLAMA_BASE_URLS=http://172.18.0.2:11434 #comma separated ollama hosts
       - ENV=dev
       - WEBUI_AUTH=False
       - WEBUI_NAME=valiantlynx AI
@@ -56,12 +59,19 @@ services:
     restart: unless-stopped
     networks:
       ollama-docker:
+        
       proxy:
         ipv4_address: 192.168.1.12
 
 networks:
   ollama-docker:
-    external: false
+    name: proxy
+    ipam:
+      driver: default
+
+      config:
+        - subnet: 172.18.0.0/24
+          gateway: 172.18.0.1
   proxy:
     external: true
     
